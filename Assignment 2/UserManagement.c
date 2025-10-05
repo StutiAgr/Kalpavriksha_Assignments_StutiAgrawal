@@ -19,13 +19,14 @@ void readUsers();
 void updateUser();
 void deleteUser();
 void menu();
+int readInt(const char* prompt);
 
 int main(){
     int choice;
     do{
         menu();
         printf("Enter choice: ");
-        scanf("%d",&choice);
+        choice=readInt("Enter choice: ");
         switch(choice){
             case 1:
                 createUser();
@@ -75,8 +76,7 @@ void createUser(){
     u.id=getNextId();
     printf("Enter name: ");
     scanf(" %[^\n]", u.name);  //read full line until newline
-    printf("Enter age: ");
-    scanf("%d", &u.age);
+    u.age=readInt("Enter age: ");
     fprintf(f,"%d\t%s\t%d\n",u.id,u.name,u.age);
     fclose(f);
     printf("User added. Assigned ID: %d\n",u.id);
@@ -100,7 +100,7 @@ void readUsers(){
 }
 
 //update details of user by searching with id
-//as we cant modify the file, we will copy everythiing to a temp file, only updating matching record
+//copy everythiing to a temp file, only updating matching record
 void updateUser(){
     int id,found=0;
     FILE *f=fopen(FILENAME,"r");
@@ -109,8 +109,9 @@ void updateUser(){
         printf("Unable to open file\n");
         return;
     }
-    printf("Enter ID to update: ");
-    scanf("%d",&id);
+    printf("\n----Update a User----\n");
+    id=readInt("Enter ID to update: ");
+    
     User u;
     while(fscanf(f,"%d\t%99[^\t]\t%d",&u.id,u.name,&u.age)==3){
         if(u.id==id){
@@ -118,8 +119,7 @@ void updateUser(){
             //ask for new values;
             printf("Enter new name: ");
             scanf(" %[^\n]",u.name);
-            printf("Enter new age: ");
-            scanf("%d",&u.age);
+            u.age=readInt("Enter new age: ");
         }
         fprintf(temp,"%d\t%s\t%d\n",u.id,u.name,u.age);
     }
@@ -134,7 +134,7 @@ void updateUser(){
 }
 
 //delete user by id
-//again, copy all records except one with matching id
+//copy all records except one with matching id
 void deleteUser(){
     int id,found=0;
     FILE *f=fopen(FILENAME,"r");
@@ -144,8 +144,7 @@ void deleteUser(){
         return;
     }
     printf("\n----Delete a User----\n");
-    printf("Enter ID to delete: ");
-    scanf("%d",&id);
+    id=readInt("Enter ID to delete: ");
     User u;
     while(fscanf(f,"%d\t%99[^\t]\t%d",&u.id,u.name,&u.age)==3){
         if(u.id==id){
@@ -171,9 +170,16 @@ void menu() {
     printf("4. Delete User\n");
     printf("5. Exit\n");
 }
-/*
-    things handled:
-    -unique ids by assigning it instead of letting user choose it
-    -handling printing if there are no users
-    -handling if the user to update/delete is not found
-*/
+//handling invalid inputs(other than integer)
+int readInt(const char* prompt){
+    int value;
+    while(1){
+        printf("%s",prompt);
+        if(scanf("%d",&value)==1){
+            while(getchar()!='\n'); //clear remaining buffer
+            return value;
+        }
+        printf("Invalid input. Please enter a valid number.\n");
+        while(getchar()!='\n');
+    }
+}
