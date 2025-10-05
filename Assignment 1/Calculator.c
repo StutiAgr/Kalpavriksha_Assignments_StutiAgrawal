@@ -1,152 +1,211 @@
+#include<ctype.h>
+#include<limits.h>
 #include<stdio.h>
 #include<string.h>
 
 #define MAX 100
+
 int error=0;
 
-int evaluate(char *input){
+int isOperator(char c);
+int parseNumber(char *input, int *index, int length, int isNegative);
+int applyOperation(int *stack, int *top, char op, int num);
+void pushToStack(int *stack, int *top, int value);
+int calculateResult(int *stack, int top);
+int validateAndEvaluate(char *input);
+void displayMenu();
+
+int main(){
+    char input[1000];
+    int choice;
+    printf("Welcome to Calculator!\n");
+    do{
+        displayMenu();
+        printf("Enter your choice: ");
+        scanf("%d",&choice);
+        getchar(); //consume newline
+
+        if(choice==1){
+            printf("Enter expression: ");
+            fgets(input,1000,stdin);
+            error=0;
+            int result=validateAndEvaluate(input);
+
+            if(!error){
+                printf("Result: %d\n",result);
+            }
+        }
+        else if(choice==2){
+            printf("Exiting...");
+        }
+        else{
+            printf("Invalid choice. Please enter 1 or 2.\n");
+        }
+    }while(choice!=2);
+    return 0;
+}
+
+void displayMenu(){
+    printf("\n----Calculator Menu----\n");
+    printf("1. Evaluate Expression\n");
+    printf("2. Exit\n");
+}
+
+int isOperator(char c){
+    return (c=='+' || c=='-' || c=='*' || c=='/');
+}
+
+int parseNumber(char *input, int *index, int length, int isNegative){
+    long long num=0;
+    while(*index<length && input[*index]>='0' && input[*index]<='9'){
+        num=num*10+(input[*index]-'0');
+        if(!isNegative && num>INT_MAX){
+            printf("Error: Number too large (overflow).");
+            error=1;
+            return 0;
+        }
+        if(isNegative && num>(long long)INT_MAX+1){
+            printf("Error: Number too small (underflow).");
+            error=1;
+            return 0;
+        }
+        (*index)++;
+    }
+    if(isNegative){
+        num=-num;
+        if(num<INT_MIN){
+            printf("Error: Number too small (underflow).");
+            error=1;
+            return 0;
+        }
+    }
+    return (int)num;
+}
+
+void pushToStack(int *stack, int *top, int value){
+    if(*top>=MAX-1){
+        printf("Error: Stack overflow.");
+        error=1;
+        return;
+    }
+    (*top)++;
+    stack[*top]=value;
+}
+
+int applyOperation(int *stack, int *top, char op, int num) {
+    if(op=='/') {
+        if(num==0){
+            printf("Error: Division by zero.");
+            error=1;
+            return 0;
+        }
+        stack[*top]/=num;
+    }
+    else if(op=='*'){
+        long long result=(long long)stack[*top]*num;
+        if(result>INT_MAX || result<INT_MIN){
+            printf("Error: Multiplication overflow.");
+            error=1;
+            return 0;
+        }
+        stack[*top]=(int)result;
+    }
+    else if(op=='+') {
+        pushToStack(stack, top, num);
+    }
+    else if(op=='-') {
+        pushToStack(stack, top, -num);
+    }
+    return 1;
+}
+
+int calculateResult(int *stack, int top){
+    long long result=0;
+    for(int j=0;j<=top;j++) {
+        result+=stack[j];
+        if(result>INT_MAX){
+            printf("Error: Result overflow");
+            error=1;
+            return 0;
+        }
+        if(result<INT_MIN){
+            printf("Error: Result underflow");
+            error=1;
+            return 0;
+        }
+    }
+    return (int)result;
+}
+
+int validateAndEvaluate(char *input){
     int stack[MAX];
     int top=-1;
     char prevOp='+';
     int i=0;
     int length=strlen(input);
-    //to check if the expr ends with an operator(invalid)
-    //we'll make a bool to check whether each operator has been processed/pending
-    //this variable is also for checking multiple operators in middle of 2 nums
     int opPending=0;
-    //flag to track if next number should be negative
     int makeNegative=0;
-    //store each number in num:
-    int num=0;
+    
     while(i<length){
         char c=input[i];
-
-        //if space, then ignore
-        if(c==' ' || c=='\n' || c=='\0' || c=='\t'){
+        if(isspace(c)){
             i++;
             continue;
         }
 
-        //if digit
-        else if(c>='0' && c<='9'){
-            num=0;
-            //handle multi-digit numbers
-            while(i<length && input[i]>='0' && input[i]<='9'){
-                num=(num*10+(input[i]-'0'));
-                i++;
+        if(isdigit(c)){
+            int num=parseNumber(input, &i, length, makeNegative);
+            makeNegative=0;
+            if(!applyOperation(stack, &top, prevOp, num)){
+                return 0;
             }
-            //if this number should be negative, multiply by -
-            if(makeNegative){
-                num=-num;
-                makeNegative=0; //reset flag
-            }
-            
-            //calculate division and multiplication first, store addition and subtraction for later
-            switch(prevOp){
-                case '/':
-                    //handle division by 0
-                    if(num==0){
-                        printf("Error: Division by zero.");
-                        error=1;
-                        return 0;
-                    }
-                    stack[top]=stack[top]/num;
-                    break;
-                case '*':
-                    stack[top]*=num;
-                    break;
-                case '+':
-                    top++;
-                    stack[top]=num;
-                    break;
-                case '-':
-                    //put negative of that number for subtraction so that we can just add later
-                    top++;
-                    stack[top]=-num;
-                    break;
-            }
-            opPending=0; //operator is processed
+            if(error) return 0;
+            opPending=0;
             continue;
         }
         
-        else if(c=='+' || c=='-' || c=='*' || c=='/'){
-            //if the expression is starting with an operator, then invalid expr.
-            //except '-' for negative numbers
+        if(isOperator(c)){
             if(top==-1 && c!='-'){
-                printf("Error: Invalid expression.");
+                printf("Error: Expression cannot start with operator.");
                 error=1;
                 return 0;
             }
-            //if previous op is not processed, meaning multiple operators between 2 nums, ->invalid
-            //except - for negative numbers
             if(opPending && c!='-'){
-                printf("Error: Invalid expression.");
+                printf("Error: Multiple operators between numbers.");
                 error=1;
                 return 0;
             }
-            //if minus appears at start or after another operator, it's for negative number
             if(c=='-' && (top==-1 || opPending)){
-                //if makeNegative is already set, that means there are 2 '-' together, making it invalid
-                if(makeNegative){
-                    printf("Error: Invalid expression.");
+                if(makeNegative) {
+                    printf("Error: Double negative sign.");
                     error=1;
                     return 0;
                 }
-                makeNegative = 1;
+                makeNegative=1;
                 i++;
-                continue; //don't set prevOp or opPending for this minus
+                continue;
             }
-
             prevOp=c;
             i++;
-            opPending=1; //operator processing pending
+            opPending=1;
         }
         else{
-            printf("Error: Invalid expression.");
+            printf("Error: Invalid character '%c'.", c);
             error=1;
             return 0;
         }
     }
 
-    //ending with operator -> invalid
     if(opPending){
-        printf("Error: Invalid expression.");
+        printf("Error: Expression cannot end with operator.");
         error=1;
         return 0;
     }
 
-    //if top==-1, it means string was empty or only had whitespaces,->invalid
     if(top==-1){
-        printf("Error: Empty expression");
+        printf("Error: Empty expression.");
         error=1;
         return 0;
     }
-
-    //div and mul have been calculated
-    //add the numbers in stack (- already put for subtraction)
-    int result=0;
-    for(int j=0;j<=top;j++){
-        result+=stack[j];
-    }
-    return result;
+    return calculateResult(stack, top);
 }
-
-int main(){
-    char input[MAX];
-    fgets(input,MAX,stdin);
-    int result=evaluate(input);
-    if(!error) printf("%d",result);
-    return 0;
-}
-
-
-/*
-    things handled:
-    -division by zero
-    -invalid character
-    -starting with operator
-    -ending with operator
-    -multiple operators in between 2 numbers
-    -expressions that are empty or only contain whitespaces
-    -negative numbers, both at start and after operators
-*/
