@@ -2,17 +2,14 @@
 #include<stdlib.h>
 #include<string.h>
 
-//file where records are stored
 #define FILENAME "users.txt"
 
-//structure to represent user
 typedef struct{
     int id;
     char name[100];
     int age;
 } User;
 
-//functions declaration
 int getNextId();
 void createUser();
 void readUsers();
@@ -99,8 +96,6 @@ void readUsers(){
     fclose(f);
 }
 
-//update details of user by searching with id
-//copy everythiing to a temp file, only updating matching record
 void updateUser(){
     int id,found=0;
     FILE *f=fopen(FILENAME,"r");
@@ -133,8 +128,6 @@ void updateUser(){
     else printf("User not found.\n");
 }
 
-//delete user by id
-//copy all records except one with matching id
 void deleteUser(){
     int id,found=0;
     FILE *f=fopen(FILENAME,"r");
@@ -149,7 +142,6 @@ void deleteUser(){
     while(fscanf(f,"%d\t%99[^\t]\t%d",&u.id,u.name,&u.age)==3){
         if(u.id==id){
             found=1;
-            //skip writing this -> effectively deleting it
             continue;
         }
         fprintf(temp,"%d\t%s\t%d\n",u.id,u.name,u.age);
@@ -170,7 +162,6 @@ void menu() {
     printf("4. Delete User\n");
     printf("5. Exit\n");
 }
-//handling invalid inputs(other than integer)
 int readInt(const char* prompt){
     int value;
     while(1){
