@@ -77,7 +77,6 @@ Student inputSingleStudent(Student students[], int index) {
     int marks1, marks2, marks3;
 
     printf("\n--- Enter details for Student %d ---\n", index + 1);
-    // roll number
     while (1) {
         printf("Roll number: ");
         if (scanf("%d", &s.rollNumber) == 1 && s.rollNumber > 0) {
@@ -88,10 +87,8 @@ Student inputSingleStudent(Student students[], int index) {
             while (getchar() != '\n');
         }
     }
-    // name
     printf("Name: ");
     scanf(" %[^\n]", s.name);
-    // marks
     while (1) {
         printf("Marks for Subject 1: ");
         if (scanf("%d", &marks1) == 1 && marks1 >= 0 && marks1 <= 100) break;
