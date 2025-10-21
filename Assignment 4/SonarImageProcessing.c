@@ -63,38 +63,43 @@ void rotateMatrix(int** matrix, int size){
     mirrorMatrix(matrix, size);
 }
 
-void smoothMatrix(int** matrix, int size){
-    int *prevRow = (int*)malloc(size * sizeof(int));
-    int *currRow = (int*)malloc(size * sizeof(int));
+void copyRow(int* destRow, int* srcRow, int size) {
+    for (int i = 0; i < size; i++) {
+        *(destRow + i) = *(srcRow + i);
+    }
+}
 
-    for(int matrixRow = 0; matrixRow < size; matrixRow++){
-        for(int i = 0; i < size; i++){
-            *(currRow + i) = *(*(matrix + matrixRow) + i);
+int computeSmoothValue(int** matrix, int size, int matrixRow, int matrixCol, int* prevRow, int* currRow) {
+    int sum = 0;
+    int count = 0;
+
+    for (int filterRow = matrixRow - 1; filterRow <= matrixRow + 1; filterRow++) {
+        if (filterRow < 0 || filterRow >= size) continue;
+
+        int* rowPtr;
+        if (filterRow == matrixRow - 1) rowPtr = prevRow;
+        else if (filterRow == matrixRow) rowPtr = currRow;
+        else rowPtr = *(matrix + filterRow);
+
+        for (int filterCol = matrixCol - 1; filterCol <= matrixCol + 1; filterCol++) {
+            if (filterCol < 0 || filterCol >= size) continue;
+            sum += *(rowPtr + filterCol);
+            count++;
         }
+    }
+    return sum / count;
+}
 
-        for(int matrixCol = 0; matrixCol < size; matrixCol++){
-            int sum = 0;
-            int count = 0;
+void smoothMatrix(int** matrix, int size) {
+    int* prevRow = (int*)malloc(size * sizeof(int));
+    int* currRow = (int*)malloc(size * sizeof(int));
 
-            for(int filterRow = matrixRow-1; filterRow <= matrixRow + 1; filterRow++){
-                if(filterRow < 0 || filterRow >= size) continue;
-                int *rowPtr;
-                if(filterRow == matrixRow - 1) rowPtr = prevRow;
-                else if(filterRow == matrixRow) rowPtr = currRow;
-                else rowPtr = *(matrix + filterRow);
-
-                for(int filterCol = matrixCol - 1; filterCol <= matrixCol + 1; filterCol++){
-                    if(filterCol < 0 || filterCol >= size) continue;
-                    sum += *(rowPtr + filterCol);
-                    count++;
-                }
-            }
-
-            *(*(matrix + matrixRow) + matrixCol) = sum / count;
+    for (int matrixRow = 0; matrixRow < size; matrixRow++) {
+        copyRow(currRow, *(matrix + matrixRow), size);
+        for (int matrixCol = 0; matrixCol < size; matrixCol++) {
+            *(*(matrix + matrixRow) + matrixCol) = computeSmoothValue(matrix, size, matrixRow, matrixCol, prevRow, currRow);
         }
-        for(int i = 0; i < size; i++){
-            *(prevRow + i) = *(currRow + i);
-        }
+        copyRow(prevRow, currRow, size);
     }
     free(prevRow);
     free(currRow);
