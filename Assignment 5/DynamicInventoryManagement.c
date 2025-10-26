@@ -316,7 +316,7 @@ Product* deleteProduct(Product* productList){
                 productList = tempPtr;
             }
             else{
-                printf("Item delete. Failed to reallocate memory.\n");
+                printf("Item deleted. Failed to reallocate memory.\n");
                 return productList;
             }
             printf("Product deleted successfully!\n");
@@ -381,11 +381,11 @@ int main(){
     printf("\n");
 
     Product* productList = calloc(initialProducts, sizeof(Product));
+    currNumOfProducts = initialProducts;
 
     for(int i = 0; i < initialProducts; i++){
         printf("Enter details for product %d: \n", (i + 1));
         getProductDetails(productList, i);
     }
-    currNumOfProducts = initialProducts;
     initiateManagement(productList);
 }
