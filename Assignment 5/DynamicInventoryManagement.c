@@ -374,7 +374,6 @@ void initiateManagement(Product* productList){
     }
 }
 
-
 int main(){
     int initialProducts;
     printf("Enter initial number of products: ");
