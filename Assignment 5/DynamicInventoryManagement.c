@@ -2,8 +2,8 @@
 #include<stdlib.h>
 
 #define MAX_INITIAL_PRODUCTS 100
-#define MAX_PRODUCT_ID 10000
 #define MAX_NAME_LENGTH 50
+#define MAX_PRODUCT_ID 10000
 #define MAX_PRODUCT_PRICE 100000.0
 #define MAX_PRODUCT_QUANTITY 1000000
 
@@ -60,7 +60,6 @@ int getInitialNumberOfProducts(){
         initialProducts = getValidInteger();
         if(initialProducts < 1 || initialProducts > MAX_INITIAL_PRODUCTS){
             printf("Please enter a number between 1-100: ");
-
         }
         else{
             return initialProducts;
@@ -105,14 +104,25 @@ int getStringLength(char* string){
 
 char* getProductName(){
     char* productName = malloc(MAX_NAME_LENGTH * sizeof(char));
-    fgets(productName, MAX_NAME_LENGTH, stdin);
-
-    int length = getStringLength(productName);
-    if(*(productName + length - 1) == '\n'){
-        *(productName + length - 1) = '\0';
+    if(productName == NULL){
+        printf("Memory allocation failed!\n");
+        return NULL;
     }
-    else{
-        while(getchar() != '\n');
+    while(1){
+        fgets(productName, MAX_NAME_LENGTH, stdin);
+        int length = getStringLength(productName);
+        if(*(productName + length - 1) == '\n'){
+            *(productName + length - 1) = '\0';
+            length--;
+        }
+        else{
+            while(getchar() != '\n');
+        }
+        if(length == 0){
+            printf("Product name cannot be empty. Please enter again: ");
+            continue;
+        }   
+        break;
     }
     return productName;
 }
@@ -143,16 +153,21 @@ int getProductQuantity(){
     }
 }
 
-void getProductDetails(Product* productList, int index){
+int getProductDetails(Product* productList, int index){
     printf("Product ID: ");
     (productList + index)->productID = getProductID(productList);
     printf("Product Name: ");
     (productList + index)->productName = getProductName();
+    if((productList + index)->productName == NULL){
+        printf("Failed to allocate memory for product name!\n");
+        return 0;
+    }
     printf("Product Price: ");
     (productList + index)->price = getProductPrice();
     printf("Product Quantity: ");
     (productList + index)->quantity = getProductQuantity();
     printf("\n");
+    return 1;
 }
 
 void displayMenu(){
@@ -178,7 +193,10 @@ Product* addNewProduct(Product* productList){
         return productList;
     }
     printf("\nEnter new product details: \n");
-    getProductDetails(productList, currNumOfProducts - 1);
+    if(!getProductDetails(productList, currNumOfProducts - 1)){
+        currNumOfProducts--;
+        return productList;
+    }
     printf("Product added successfully!\n");
     return productList;
 }
@@ -254,6 +272,10 @@ int isSubstring(char* substring, char* string){
 void searchProductByName(Product* productList){
     printf("\nEnter name to search (partial allowed): ");
     char* nameToFind = getProductName();
+    if(nameToFind == NULL){
+        printf("Failed to allocate memory for search!\n");
+        return;
+    }
     int found = 0;
     for(int index = 0; index < currNumOfProducts; index++){
         if(isSubstring(nameToFind, (productList + index)->productName)){
@@ -381,11 +403,19 @@ int main(){
     printf("\n");
 
     Product* productList = calloc(initialProducts, sizeof(Product));
-    currNumOfProducts = initialProducts;
+    if(productList == NULL){
+        printf("Memory allocation failed!\n");
+        return 1;
+    }
 
     for(int i = 0; i < initialProducts; i++){
         printf("Enter details for product %d: \n", (i + 1));
-        getProductDetails(productList, i);
+        if(!getProductDetails(productList, i)){
+            printf("Failed to add product. Exiting...\n");
+            freeMemory(productList);
+            return 1;
+        }
+        currNumOfProducts++;
     }
     initiateManagement(productList);
 }
