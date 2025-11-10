@@ -82,7 +82,7 @@ void initializeFileSystem(){
     root->parent = NULL;
     root->child = NULL;
     stringCopy(root->name,"/");
-    root->next = root;
+    root->next = NULL;
     root->contentSize = 0;
     root->numOfBlocks = 0;
     cwd = root;
@@ -129,7 +129,7 @@ void mkdir(char* name){
     if(node){
         do{
             if(isEqual(node->name, name)){
-                printf("Name already exists in current directory.\n", name);
+                printf("Name already exists in current directory.\n");
                 return;
             }
             node = node->next;
@@ -220,7 +220,7 @@ void cd(char *name){
             }
             temp = temp->next;
         }while(temp != cwd->child);
-        printf("Directory not found.", name);
+        printf("Directory not found.");
     }
 }
 
@@ -229,7 +229,7 @@ void create(char* name){
     if(node){
         do{
             if(isEqual(node->name, name)){
-                printf("Name already exists in current directory.\n", name);
+                printf("Name already exists in current directory.\n");
                 return;
             }
             node = node->next;
