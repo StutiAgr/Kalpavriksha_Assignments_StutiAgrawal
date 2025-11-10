@@ -177,6 +177,8 @@ void pwd(){
     FileNode* temp = cwd;
     char path[PATH_SIZE] = "";
     char tempPath[PATH_SIZE] = "";
+    path[0] = '\0';
+    tempPath[0] = '\0';
     while(temp != root){
         sprintf(tempPath,"%s/%s",temp->name, path);
         stringCopy(path, tempPath);
@@ -457,11 +459,21 @@ void freeFileNodes(FileNode* node){
     FileNode* child = node->child;
     if(child){
         FileNode* start = child;
-        do{
-            FileNode* nextChild = child->next;
-            freeFileNodes(child);
-            child = (nextChild == start) ? NULL : nextChild;
-        }while(child);
+        FileNode* last = child;
+
+        while(last->next != start){
+            last = last->next;
+        }
+        last->next = NULL;
+        FileNode* current = start;
+        while(current){
+            FileNode* nextChild = current->next;
+            freeFileNodes(current);
+            current = nextChild;
+        }
+    }
+    if(!node->isDirectory){
+        freeFileBlocks(node);
     }
     free(node);
 }
