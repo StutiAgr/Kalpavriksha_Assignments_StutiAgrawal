@@ -261,7 +261,7 @@ int getValidPlayerId(){
     while(1){
         int id = getValidInteger();
         if(id < 1 || id > MAX_PLAYER_ID){
-            printf("Enter ID in range 1-1000: ");
+            printf("Enter ID in range 1-1500: ");
         }
         else if(playerIdExists(id)){
             printf("ID already exists! Enter again: ");
