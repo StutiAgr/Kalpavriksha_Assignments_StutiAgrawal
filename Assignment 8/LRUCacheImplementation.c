@@ -46,7 +46,12 @@ int stringCompare(char* string1, char* string2){
 }
 
 char* stringCopy(char* source){
+    if(source == NULL) return NULL;
     char* destination = (char*)malloc(stringLength(source) + 1);
+    if(!destination){
+        printf("Failed to allocate memory.\n");
+        return NULL;
+    }
     char* ptr = destination;
     while(*source){
         *ptr = *source;
@@ -241,7 +246,32 @@ void handlePut(char* command, int cacheCreated){
         printf("Failed to allocate memory.\n");
         return;
     }
-    if(sscanf(command, "put %s %s", keyStr, value) != 2){
+    char* ptr = command;
+    while(*ptr && *ptr != ' ') ptr++;
+    if(!*ptr){
+        printf("Invalid put command. Syntax: put <key> <value>\n");
+        free(value);
+        return;
+    }
+    ptr++;
+    int i = 0;
+    while(*ptr && *ptr != ' ' && i < 9){
+        keyStr[i++] = *ptr++;
+    }
+    keyStr[i] = '\0';
+    if(!*ptr){
+        printf("Invalid put command. Syntax: put <key> <value>\n");
+        free(value);
+        return;
+    }
+    ptr++;
+    i = 0;
+    while(*ptr && i < MAX_VALUE_SIZE - 1){
+        value[i++] = *ptr;
+        ptr++;
+    }
+    value[i] = '\0';
+    if(i == 0){
         printf("Invalid put command. Syntax: put <key> <value>\n");
         free(value);
         return;
@@ -253,6 +283,7 @@ void handlePut(char* command, int cacheCreated){
         return;
     }
     put(key, value);
+    free(value);
 }
 
 void get(int key){
