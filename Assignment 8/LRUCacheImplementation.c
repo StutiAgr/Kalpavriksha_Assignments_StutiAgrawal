@@ -176,6 +176,10 @@ void hashMapInsert(int key, QueueNode* queuePtr){
 
 void hashMapReplace(int oldKey, int newKey, QueueNode* queuePtr){
     int index = hashMapSearch(oldKey);
+    if(index == -1){
+        printf("Error: Old key not found in hashmap during replace operation.\n");
+        return;
+    }
     lruCache[index].key = newKey;
     lruCache[index].queuePtr = queuePtr;
 }
