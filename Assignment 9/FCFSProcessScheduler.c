@@ -14,6 +14,12 @@ typedef enum{
     TERMINATED
 } ProcessState;
 
+typedef enum{
+    EMPTY,
+    OCCUPIED,
+    DELETED
+} HashStatus;
+
 typedef struct{
     int pid;
     char* name;
@@ -30,6 +36,11 @@ typedef struct{
     int isKilled;
     int ioJustStarted;
 } ProcessControlBlock;
+
+typedef struct{
+    ProcessControlBlock* pcb;
+    HashStatus status;
+} HashEntry;
 
 typedef struct QueueNode{
     int pid;
@@ -48,7 +59,7 @@ typedef struct EventToKill{
     struct EventToKill* next;
 } EventToKill;
 
-ProcessControlBlock* pcbHashMap[MAX_PROCESSES];
+HashEntry pcbHashMap[MAX_PROCESSES];
 
 EventToKill* killEventHead = NULL;
 
@@ -57,6 +68,10 @@ Queue* waitingQueue;
 Queue* terminatedQueue;
 
 int systemClock = 0;
+
+int hashFunction(int pid){
+    return pid % MAX_PROCESSES;
+}
 
 int stringLength(char* str){
     int length = 0;
@@ -166,12 +181,27 @@ void initializePCB(int pid, char* name, int burstTime, int ioStart, int ioDurati
     pcb->isKilled = 0;
     pcb->ioJustStarted = 0;
     
-    pcbHashMap[pid] = pcb;
+    int index = hashFunction(pid);
+    while(pcbHashMap[index].status == OCCUPIED){
+        index = (index + 1) % MAX_PROCESSES;
+    }
+    pcbHashMap[index].pcb = pcb;
+    pcbHashMap[index].status = OCCUPIED;
     enqueue(readyQueue, pid);
 }
 
 ProcessControlBlock* getPCB(int pid){
-    return pcbHashMap[pid];
+    int index = hashFunction(pid);
+    int originalIndex = index;
+
+    while(pcbHashMap[index].status != EMPTY){
+        if(pcbHashMap[index].status == OCCUPIED && pcbHashMap[index].pcb->pid == pid){
+            return pcbHashMap[index].pcb;
+        }
+        index = (index + 1) % MAX_PROCESSES;
+        if(index == originalIndex) break;
+    }
+    return NULL;
 }
 
 EventToKill* createEvent(int pid, int killTime){
@@ -412,9 +442,9 @@ void readInput(){
 
 void freeMemory(){
     for(int i = 0; i < MAX_PROCESSES; i++){
-        if(pcbHashMap[i] != NULL) {
-            free(pcbHashMap[i]->name);
-            free(pcbHashMap[i]);
+        if(pcbHashMap[i].status == OCCUPIED && pcbHashMap[i].pcb != NULL) {
+            free(pcbHashMap[i].pcb->name);
+            free(pcbHashMap[i].pcb);
         }
     }
     while(!isQueueEmpty(readyQueue)){
@@ -453,7 +483,8 @@ int main(){
     terminatedQueue = initiateQueue();
 
     for(int i = 0; i < MAX_PROCESSES; i++){
-        pcbHashMap[i] = NULL;
+        pcbHashMap[i].pcb = NULL;
+        pcbHashMap[i].status = EMPTY;
     }
     initiateScheduler();
 }
