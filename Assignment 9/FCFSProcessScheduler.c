@@ -17,7 +17,6 @@ typedef enum{
 typedef enum{
     EMPTY,
     OCCUPIED,
-    DELETED
 } HashStatus;
 
 typedef struct{
@@ -83,7 +82,12 @@ int stringLength(char* str){
 }
 
 char* stringCopy(char* src){
-    char* dest = (char*)malloc(stringLength(src) + 1);
+    if(src == NULL) return NULL;
+    int length = stringLength(src);
+    if(length >= MAX_NAME_LENGTH){
+        length = MAX_NAME_LENGTH - 1;
+    }
+    char* dest = (char*)malloc(length + 1);
     char* ptr = dest;
     while(*src){
         *ptr = *src;
@@ -328,18 +332,18 @@ void startScheduler(){
                 (pcb->executionTime)++;
                 (pcb->remainingBurstTime)--;
     
-                if(pcb->ioStartTime > 0 && pcb->executionTime == pcb->ioStartTime && pcb->ioDuration > 0 && pcb->remainingBurstTime > 0){
+                if(pcb->remainingBurstTime == 0){
+                    pcb->state = TERMINATED;
+                    pcb->completionTime = systemClock + 1;
+                    enqueue(terminatedQueue, currentRunningPid);
+                    currentRunningPid = -1;
+                }
+
+                else if(pcb->ioStartTime > 0 && pcb->executionTime == pcb->ioStartTime && pcb->ioDuration > 0 && pcb->remainingBurstTime > 0){
                     pcb->state = WAITING;
                     pcb->remainingIoTime = pcb->ioDuration;
                     pcb->ioJustStarted = 1;
                     enqueue(waitingQueue, currentRunningPid);
-                    currentRunningPid = -1;
-                }
-    
-                else if(pcb->remainingBurstTime == 0){
-                    pcb->state = TERMINATED;
-                    pcb->completionTime = systemClock + 1;
-                    enqueue(terminatedQueue, currentRunningPid);
                     currentRunningPid = -1;
                 }
             }
@@ -358,11 +362,8 @@ void calculateValues(){
 
     while(current != NULL){
         ProcessControlBlock* pcb = getPCB(current->pid);
-        pcb->turnAroundTime = pcb->completionTime;
-        if(pcb->isKilled){
-            pcb->waitingTime = pcb->burstTime - pcb->executionTime;
-        }
-        else{
+        if(!pcb->isKilled){
+            pcb->turnAroundTime = pcb->completionTime;
             pcb->waitingTime = pcb->turnAroundTime - pcb->burstTime;
         }
         current = current->next;
