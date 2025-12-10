@@ -107,7 +107,11 @@ int stringCompare(char* str1, char* str2){
 }
 
 Queue* initiateQueue(){
-    Queue*queue = (Queue*)malloc(sizeof(Queue));
+    Queue *queue = (Queue*)malloc(sizeof(Queue));
+    if(!queue){
+        printf("Memory allocation failed.\n");
+        return NULL;
+    }
     queue->front = NULL;
     queue->rear = NULL;
     queue->size = 0;
